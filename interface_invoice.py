@@ -14,7 +14,7 @@ if 'folder' not in st.session_state:
 # Streamlit app title and description
 st.title("Airplus App")
 st.write("Manage invoices by moving and searching for them.")
-st.beta_set_page_config(transparent_navbar=True)
+
 # Input for source folder path
 source_folder_path = st.text_input("Source Folder Path")
 
