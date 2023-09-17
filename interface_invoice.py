@@ -4,7 +4,7 @@ import os
 import zipfile
 import shutil
 import glob
-
+st.beta_set_page_config(transparent_navbar=True)
 if 'data' not in st.session_state:
     st.session_state.data = None
 
