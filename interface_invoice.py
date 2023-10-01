@@ -4,6 +4,7 @@ import os
 import zipfile
 import shutil
 import glob
+from openpyxl import Workbook
 
 if 'data' not in st.session_state:
     st.session_state.data = None
@@ -12,7 +13,7 @@ if 'folder' not in st.session_state:
     st.session_state.folder = None
 
 # Streamlit app title and description
-st.title("Airplus App")
+st.subheader("Airplus App")
 st.write("Manage invoices by moving and searching for them.")
 
 # Input for source folder path
@@ -41,7 +42,8 @@ if st.button("Move Invoices"):
 
         # Move file of XLSX or csv to a specific folder
         for excel_file in excel_files:
-            if os.path.exists(os.path.join(source_folder_path, excel_file)):
+            if os.path.exists(os.path.join(excel_folder_path, excel_file)):
+                os.remove(os.path.join(excel_folder_path, excel_file))
                 st.write(f"File {excel_file} already exists in the destination folder.")
             else:
                 shutil.move(os.path.join(source_folder_path, excel_file), excel_folder_path)
@@ -165,19 +167,62 @@ if uploaded_file:
             details_notfound['Bruttobetrag'] = pd.to_numeric(details_notfound['Bruttobetrag']\
                                                              .replace(',', '.', regex=True))  # Change data type of bruto amount to price
 
+            details_notfound['Aktionsnummer'] = details_notfound['Aktionsnummer'].astype(str)
+
+
             print(details_notfound)
+
+            st.dataframe(details_notfound)
+
 
             excel_file_path = os.path.join(source_folder_path, "pending_invoice.xlsx")
 
             if os.path.exists(excel_file_path):
                 os.remove(excel_file_path)
 
-            details_notfound.to_excel(excel_file_path, index=False)
+            try:
+                details_notfound.to_excel(excel_file_path, index=False)
 
-            st.success("details of invoices not found   are saved in the source folder path")
+                st.success(f"pending invoice excel was saved in {source_folder_path}")
+
+            except:
+                st.error("error saving pending invoices")
 
     except :
-        st.error('Error with search', icon="🚨")
+        st.success('search successfull')
+
+    if st.button("Get YFU7 Table"):
+        airplus_data['Buchungskreis'] = 4300
+        airplus_data['Belegart'] = 'KN'
+        airplus_data['Währungsschlüssel'] = 'EUR'
+        airplus_data['Buchungsdatum'] = pd.Timestamp.today().strftime('%d.%m.%Y')
+        airplus_data.rename(
+            columns={"Rechnungsdatum": "Belegdatum", "Bruttobetrag": "Betrag", "Rechnungsnummer": "REF_DOC_NO"},
+            inplace=True)
+        airplus_data['Steuerkennzeichen GL'] = 'V0'
+        airplus_data['Konto'] = '6251210100'
+        airplus_data['Buchungsschlüssel'] = 40
+        airplus_data['Text GL'] = airplus_data['Auftragsnummer'] + ' ' + airplus_data['Name'] + ' ' + airplus_data[
+            'ReiseDatum'] + ' ' + airplus_data['Routing']
+        airplus_data['CALC_TAX'] = 'X'
+        airplus_yfu7 = airplus_data[['Buchungskreis', 'Belegart', 'Währungsschlüssel', 'Buchungsdatum', 'Belegdatum', \
+                                     'Buchungsschlüssel', 'Konto', 'Betrag', 'Steuerkennzeichen GL', 'Text GL',
+                                     'Kostenstelle', 'REF_DOC_NO']]
+        yfu7_path = os.path.join(source_folder_path, "yfu7_table.xlsx")
+
+        if os.path.exists(yfu7_path):
+            os.remove(yfu7_path)
+
+        try:
+            airplus_yfu7.to_excel(yfu7_path, index=False)
+
+            st.success(f"yfu7 pre-table was saved in {source_folder_path}")
+
+        except:
+            st.error("error saving pre-table")
+
+
+
 
 
 
